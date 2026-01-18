@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zangi Pro - Global</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root { --bg: #0b141a; --sidebar: #111b21; --panel: #202c33; --green: #00a884; --my-msg: #005c4b; --text: #e9edef; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        .hidden { display: none !important; }
+        
+        /* Auth Card */
+        .auth-card { background: var(--sidebar); padding: 30px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; border: 1px solid #222; }
+        h2 { color: var(--green); margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; background: #2a3942; border: none; border-radius: 8px; color: white; box-sizing: border-box; outline: none; }
+        button { width: 100%; padding: 12px; background: var(--green); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:disabled { background: #555; cursor: not-allowed; }
+
+        /* Interface Chat */
+        #app-interface { width: 100%; height: 100vh; display: flex; flex-direction: column; background: var(--bg); }
+        .header { padding: 15px; background: var(--panel); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #111b21; }
+        #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* Mensagens */
+        .msg-box { padding: 10px 15px; border-radius: 10px; max-width: 75%; font-size: 15px; word-wrap: break-word; position: relative; }
+        .msg-remote { background: var(--panel); align-self: flex-start; border-bottom-left-radius: 2px; }
+        .msg-me { background: var(--my-msg); align-self: flex-end; border-bottom-right-radius: 2px; }
+        .msg-name { font-size: 12px; color: var(--green); font-weight: bold; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        
+        .btn-add { background: #34b7f1; border: none; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; }
+        .btn-nav { background: var(--green); color: white; padding: 8px 15px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold; }
+        .input-area { padding: 15px; background: var(--panel); display: flex; gap: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="auth-section" class="auth-card hidden">
+    <h2 id="auth-title">Zangi Pro</h2>
+    <div id="reg-fields" class="hidden">
+        <input type="text" id="reg-nome" placeholder="Seu nome">
+    </div>
+    <input type="email" id="auth-email" placeholder="E-mail">
+    <input type="password" id="auth-senha" placeholder="Senha">
+    <button onclick="handleAuth()" id="btn-auth">Entrar</button>
+    <p onclick="toggleMode()" id="toggle-text" style="color:#8696a0; font-size:13px; cursor:pointer; margin-top:15px;">Não tem conta? Crie uma</p>
+</div>
+
+<div id="app-interface" class="hidden">
+    <div class="header">
+        <div style="font-weight:bold">🌎 Chat Global</div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <a href="index2.html" class="btn-nav">PRIVADO</a>
+            <button onclick="logout()" style="width:auto; background:#ea0038; padding:8px; margin:0">Sair</button>
+        </div>
+    </div>
+    <div id="chat-window"></div>
+    <div class="input-area">
+        <input type="text" id="msg-input" placeholder="Mensagem..." onkeypress="if(event.key==='Enter') enviarMensagem()">
+        <button onclick="enviarMensagem()" style="width:auto; padding:0 20px; margin:0">➤</button>
+    </div>
+</div>
+
+<script>
+    // Configuração fornecida do seu projeto chat-60150
+    const firebaseConfig = {
+        apiKey: "AIzaSyDqn7EnXcAh268qzsSR-gdKbuUI-nNYCcw",
+        authDomain: "chat-60150.firebaseapp.com",
+        projectId: "chat-60150",
+        storageBucket: "chat-60150.firebasestorage.app",
+        messagingSenderId: "99648585531",
+        appId: "1:99648585531:web:c6df81b493219b0f17011e",
+        measurementId: "G-Z72E8HLZHP"
+    };
+
+    // Inicialização
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let isLoginMode = true;
+
+    // Monitor de autenticação
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('app-interface').classList.remove('hidden');
+            carregarMensagens();
+        } else {
+            document.getElementById('auth-section').classList.remove('hidden');
+            document.getElementById('app-interface').classList.add('hidden');
+        }
+    });
+
+    function toggleMode() {
+        isLoginMode = !isLoginMode;
+        document.getElementById('auth-title').innerText = isLoginMode ? "Zangi Pro" : "Criar Conta";
+        document.getElementById('btn-auth').innerText = isLoginMode ? "Entrar" : "Cadastrar";
+        document.getElementById('reg-fields').classList.toggle('hidden');
+        document.getElementById('toggle-text').innerText = isLoginMode ? "Não tem conta? Crie uma" : "Já tem conta? Entre aqui";
+    }
+
+    async function handleAuth() {
+        const email = document.getElementById('auth-email').value.trim();
+        const senha = document.getElementById('auth-senha').value.trim();
+        const nome = document.getElementById('reg-nome').value.trim();
+        const btn = document.getElementById('btn-auth');
+
+        if (!email || !senha) return alert("Preencha os campos!");
+        btn.disabled = true;
+
+        try {
+            if (isLoginMode) {
+                await auth.signInWithEmailAndPassword(email, senha);
+            } else {
+                if (!nome) throw new Error("Preencha seu nome!");
+                const res = await auth.createUserWithEmailAndPassword(email, senha);
+                await res.user.updateProfile({ displayName: nome });
+                alert("Conta criada com sucesso!");
+                location.reload(); 
+            }
+        } catch (e) {
+            alert(e.message);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function enviarMensagem() {
+        const input = document.getElementById('msg-input');
+        const txt = input.value.trim();
+        const user = auth.currentUser;
+
+        if (!txt || !user) return;
+        input.value = "";
+
+        try {
+            await db.collection("messages_global").add({
+                u_id: user.uid,
+                nome: user.displayName || "Usuário",
+                mensagem: txt,
+                created_at: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (e) {
+            console.error("Erro ao enviar:", e);
+        }
+    }
+
+    function carregarMensagens() {
+        // Escuta o Firestore em tempo real
+        db.collection("messages_global")
+          .orderBy("created_at", "asc")
+          .limitToLast(50)
+          .onSnapshot(snapshot => {
+            const win = document.getElementById('chat-window');
+            win.innerHTML = "";
+            
+            snapshot.forEach(doc => {
+                const m = doc.data();
+                const isMe = m.u_id === auth.currentUser.uid;
+                
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `msg-box ${isMe ? 'msg-me' : 'msg-remote'}`;
+                msgDiv.innerHTML = `
+                    <div class="msg-name">
+                        ${m.nome}
+                        ${!isMe ? `<button class="btn-add" onclick="addContato('${m.u_id}','${m.nome}')">+ ADD</button>` : ''}
+                    </div>
+                    <div>${m.mensagem}</div>
+                `;
+                win.appendChild(msgDiv);
+            });
+            win.scrollTop = win.scrollHeight;
+        });
+    }
+
+    async function addContato(id, nome) {
+        const user = auth.currentUser;
+        try {
+            await db.collection("contatos").add({
+                dono_id: user.uid,
+                contato_id: id,
+                contato_nome: nome
+            });
+            alert(nome + " adicionado aos contatos!");
+        } catch(e) {
+            alert("Erro ao adicionar contato.");
+        }
+    }
+
+    function logout() {
+        auth.signOut();
+    }
+</script>
+
+</body>
+  </html>
