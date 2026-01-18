@@ -2,53 +2,133 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zangi Private - Fix</title>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Zangi Pro - Social</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #0b141a; --sidebar: #111b21; --panel: #202c33; --green: #00a884; --my-msg: #005c4b; }
-        body { font-family: sans-serif; background: var(--bg); color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        #app { display: flex; width: 100%; }
-        .sidebar { width: 300px; background: var(--sidebar); border-right: 1px solid #222; display: flex; flex-direction: column; }
-        .chat-main { flex: 1; display: flex; flex-direction: column; background: #0b141a; }
-        .contact { padding: 15px; border-bottom: 1px solid #222; cursor: pointer; display: flex; align-items: center; gap: 10px; }
-        .contact:hover { background: var(--panel); }
-        .active { background: var(--panel); border-left: 4px solid var(--green); }
-        #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px 15px; border-radius: 10px; max-width: 70%; font-size: 15px; word-wrap: break-word; }
-        .sent { background: var(--my-msg); align-self: flex-end; border-bottom-right-radius: 2px; }
-        .received { background: var(--panel); align-self: flex-start; border-bottom-left-radius: 2px; }
-        .input-area { padding: 15px; background: var(--panel); display: flex; gap: 10px; }
-        input { flex: 1; padding: 12px; border-radius: 8px; border: none; background: #2a3942; color: white; outline: none; }
-        button { background: var(--green); color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        :root { 
+            --bg: #0f0f0f; --card: #1e1e1e; --border: #3f3f3f; --text: #f1f1f1; 
+            --yt-blue: #3ea6ff; --msg-me: #005c4b; --msg-them: #2a2a2a;
+        }
+        body { font-family: 'Roboto', sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; }
         .hidden { display: none !important; }
+
+        .auth-overlay { position: fixed; inset: 0; background: radial-gradient(circle at top, #1e1e1e, #0f0f0f); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .auth-box { background: rgba(30, 30, 30, 0.9); padding: 40px; border-radius: 20px; width: 85%; max-width: 380px; text-align: center; border: 1px solid var(--border); backdrop-filter: blur(15px); }
+        .auth-link { color: var(--yt-blue); cursor: pointer; display: block; margin-top: 15px; font-size: 14px; }
+
+        nav { background: var(--bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-around; padding: 15px 0; position: sticky; top: 0; z-index: 100; }
+        nav span { cursor: pointer; font-weight: 500; color: #888; font-size: 14px; }
+        nav span.active { color: var(--yt-blue); border-bottom: 2px solid var(--yt-blue); padding-bottom: 5px; }
+
+        .container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
+        .post-card { background: var(--card); border-radius: 12px; margin-bottom: 15px; padding: 16px; border: 1px solid var(--border); }
+        
+        .yt-actions { display: flex; align-items: center; gap: 12px; margin: 15px 0; }
+        .like-container { display: flex; background: #272727; border-radius: 20px; padding: 2px; border: 1px solid #3f3f3f; }
+        .yt-btn { background: none; border: none; color: white; padding: 7px 15px; cursor: pointer; display: flex; align-items: center; gap: 7px; border-radius: 20px; font-size: 14px; }
+        .yt-btn.active { color: var(--yt-blue); }
+        .sep { width: 1px; background: var(--border); height: 20px; align-self: center; }
+
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #121212; border: 1px solid var(--border); border-radius: 10px; color: white; box-sizing: border-box; outline: none; }
+        .btn-main { background: white; color: black; border: none; padding: 12px; border-radius: 25px; width: 100%; font-weight: bold; cursor: pointer; transition: 0.2s; }
+
+        .comm-item { font-size: 14px; margin-top: 12px; border-left: 2px solid var(--yt-blue); padding-left: 10px; }
+        .comm-item b { color: var(--yt-blue); display: block; font-size: 11px; margin-bottom: 2px; }
+        .comm-tools { display: flex; gap: 10px; margin-top: 4px; }
+        .comm-btn { background: none; border: none; color: #888; font-size: 10px; cursor: pointer; padding: 0; }
+        .btn-ver-mais { background: none; border: none; color: var(--yt-blue); cursor: pointer; font-size: 13px; font-weight: bold; margin-top: 10px; }
+
+        #chat-window { position: fixed; inset: 0; background: var(--bg); z-index: 3000; display: none; flex-direction: column; }
+        .chat-header { padding: 15px; background: #1e1e1e; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 14px; word-wrap: break-word; }
+        .msg.me { align-self: flex-end; background: var(--msg-me); border-bottom-right-radius: 2px; }
+        .msg.them { align-self: flex-start; background: var(--msg-them); border-bottom-left-radius: 2px; }
+        .chat-input-area { padding: 15px; padding-bottom: 35px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: #1e1e1e; }
+        
+        .post-admin-tools { display: flex; gap: 10px; font-size: 11px; }
+        .post-admin-tools span { cursor: pointer; color: #888; text-decoration: underline; }
     </style>
 </head>
 <body>
 
-<div id="app">
-    <div class="sidebar">
-        <div style="padding:15px; background:var(--panel)">
-            <a href="index.html" style="color:var(--green); text-decoration:none; font-weight:bold;">← Voltar ao Global</a>
-        </div>
-        <div id="contacts-list"></div>
+<div id="login-screen" class="auth-overlay">
+    <div class="auth-box">
+        <h2>Zangi Social</h2>
+        <input type="email" id="login-email" placeholder="E-mail">
+        <input type="password" id="login-pass" placeholder="Senha">
+        <button class="btn-main" onclick="fazerLogin()">ENTRAR</button>
+        <span class="auth-link" onclick="toggleAuth('reg')">Criar conta nova</span>
     </div>
-    <div class="chat-main">
-        <div style="padding:15px; background:var(--panel); font-weight:bold;" id="chat-header">Selecione um contato</div>
-        <div id="chat-window"></div>
-        <div class="input-area">
-            <input type="text" id="msg-input" placeholder="Digite uma mensagem..." onkeypress="if(event.key==='Enter') enviar()">
-            <button onclick="enviar()" id="btn-envio">Enviar</button>
+</div>
+
+<div id="reg-screen" class="auth-overlay hidden">
+    <div class="auth-box">
+        <h2>Criar Conta</h2>
+        <input type="text" id="reg-nome" maxlength="25" placeholder="Nome de usuário">
+        <input type="email" id="reg-email" placeholder="E-mail">
+        <input type="password" id="reg-pass" placeholder="Senha">
+        <button class="btn-main" onclick="fazerCadastro()">CADASTRAR</button>
+        <span class="auth-link" onclick="toggleAuth('login')">Já tenho conta</span>
+    </div>
+</div>
+
+<div id="app" class="hidden">
+    <nav>
+        <span id="nav-feed" class="active" onclick="switchTab('feed')">FEED</span>
+        <span id="nav-privado" onclick="switchTab('privado')">MENSAGENS</span>
+        <span id="nav-profile" onclick="switchTab('profile')">PERFIL</span>
+    </nav>
+
+    <div id="tab-feed" class="container">
+        <button class="btn-main" style="margin-bottom:15px" onclick="abrirModalPost()">+ CRIAR POST</button>
+        <div id="feed"></div>
+    </div>
+
+    <div id="tab-privado" class="container hidden">
+        <h3 style="padding-left:10px">Mensagens Privadas</h3>
+        <div id="lista-contatos"></div>
+    </div>
+
+    <div id="tab-profile" class="container hidden">
+        <div class="post-card">
+            <h3>Meu Perfil</h3>
+            <input type="text" id="profile-name-input" maxlength="25" placeholder="Seu nome">
+            <button class="btn-main" onclick="atualizarPerfil()">SALVAR NOME</button>
+            <button class="btn-main" onclick="auth.signOut()" style="background:none; color:red; margin-top:20px;">SAIR DA CONTA</button>
         </div>
     </div>
 </div>
 
+<div id="chat-window">
+    <div class="chat-header">
+        <button onclick="fecharChat()" style="background:none; border:none; color:white; font-size:24px;">←</button>
+        <b id="chat-with-name">...</b>
+    </div>
+    <div class="chat-messages" id="chat-msgs"></div>
+    <div class="chat-input-area">
+        <input type="text" id="msg-input" maxlength="500" placeholder="Mensagem...">
+        <button class="btn-main" style="width:auto; padding:0 20px;" onclick="enviarMensagem()">ENVIAR</button>
+    </div>
+</div>
+
+<div id="modal-pub" class="auth-overlay hidden">
+    <div class="auth-box" style="text-align: left;">
+        <h3 id="modal-title">Novo Post</h3>
+        <input type="hidden" id="edit-id">
+        <input type="text" id="p-title" maxlength="100" placeholder="Título">
+        <textarea id="p-body" rows="4" maxlength="2000" placeholder="O que está acontecendo?"></textarea>
+        <button class="btn-main" id="btn-salvar-post" onclick="enviarPost()">POSTAR</button>
+        <button class="btn-main" onclick="fecharModalPost()" style="background:none; color:white">CANCELAR</button>
+    </div>
+</div>
+
 <script>
-    // Configuração do seu Firebase (chat-60150)
     const firebaseConfig = {
         apiKey: "AIzaSyDqn7EnXcAh268qzsSR-gdKbuUI-nNYCcw",
         authDomain: "chat-60150.firebaseapp.com",
@@ -62,102 +142,293 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let currentUser = null;
-    let target = null;
-    let unsubscribeChat = null;
+    function clean(t) { return DOMPurify.sanitize(t ? t.trim() : ""); }
+    
+    // FILTRO DE PALAVRÕES
+    const PALAVRAS_BANIDAS = ["palavrao1", "ofensa1", "caralho", "porra", "puta"]; 
+    function filtroPalavroes(texto) {
+        if (!texto) return "";
+        let textoFiltrado = texto;
+        PALAVRAS_BANIDAS.forEach(palavra => {
+            const regex = new RegExp(palavra, "gi");
+            textoFiltrado = textoFiltrado.replace(regex, "****");
+        });
+        return textoFiltrado;
+    }
 
-    // Monitor de Segurança: Só carrega dados se houver usuário logado
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            currentUser = user;
-            carregarContatos();
+    let lastAction = 0;
+    function canAct() {
+        const now = Date.now();
+        if(now - lastAction < 700) return false;
+        lastAction = now;
+        return true;
+    }
+
+    // --- AUTH ---
+    function toggleAuth(mode) {
+        document.getElementById('login-screen').classList.toggle('hidden', mode === 'reg');
+        document.getElementById('reg-screen').classList.toggle('hidden', mode === 'login');
+    }
+
+    async function fazerLogin() {
+        const e = document.getElementById('login-email').value;
+        const p = document.getElementById('login-pass').value;
+        try { await auth.signInWithEmailAndPassword(e, p); } catch(err) { alert(err.message); }
+    }
+
+    async function fazerCadastro() {
+        const n = clean(document.getElementById('reg-nome').value);
+        const e = document.getElementById('reg-email').value;
+        const p = document.getElementById('reg-pass').value;
+        try {
+            const res = await auth.createUserWithEmailAndPassword(e, p);
+            await db.collection("users").doc(res.user.uid).set({ nome: n, uid: res.user.uid });
+        } catch(err) { alert(err.message); }
+    }
+
+    auth.onAuthStateChanged(async user => {
+        if(user) {
+            document.querySelectorAll('.auth-overlay').forEach(el => el.classList.add('hidden'));
+            document.getElementById('app').classList.remove('hidden');
+            const snap = await db.collection("users").doc(user.uid).get();
+            if(snap.exists) document.getElementById('profile-name-input').value = snap.data().nome;
+            carregarFeed(); carregarContatos();
         } else {
-            window.location.href = "index.html";
+            document.getElementById('app').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
         }
     });
 
-    // Carrega contatos salvos na coleção 'contatos' no Firestore
-    async function carregarContatos() {
-        try {
-            db.collection("contatos")
-              .where("dono_id", "==", currentUser.uid)
-              .onSnapshot(snapshot => {
-                const list = document.getElementById('contacts-list');
-                list.innerHTML = snapshot.docs.map(doc => {
-                    const c = doc.data();
-                    const activeClass = target?.id === c.contato_id ? 'active' : '';
-                    return `
-                        <div class="contact ${activeClass}" onclick="selecionar('${c.contato_id}', '${c.contato_nome}')">
-                            <div style="width:35px; height:35px; background:var(--green); border-radius:50%; text-align:center; line-height:35px; font-weight:bold;">
-                                ${c.contato_nome[0].toUpperCase()}
-                            </div>
-                            ${c.contato_nome}
-                        </div>
-                    `;
-                }).join('');
-            });
-        } catch(e) { console.error("Erro ao carregar contatos:", e); }
+    async function atualizarPerfil() {
+        const n = clean(document.getElementById('profile-name-input').value);
+        if(n.length >= 3) await db.collection("users").doc(auth.currentUser.uid).update({ nome: n });
     }
 
-    function selecionar(id, nome) {
-        target = { id, nome };
-        document.getElementById('chat-header').innerText = nome;
-        
-        // Remove seleção antiga visualmente
-        const contacts = document.querySelectorAll('.contact');
-        contacts.forEach(c => c.classList.remove('active'));
-        
-        carregarMensagensPrivadas();
+    // --- POSTS ---
+    function abrirModalPost() {
+        document.getElementById('modal-title').innerText = "Novo Post";
+        document.getElementById('edit-id').value = "";
+        document.getElementById('p-title').value = "";
+        document.getElementById('p-body').value = "";
+        document.getElementById('btn-salvar-post').innerText = "POSTAR";
+        document.getElementById('modal-pub').classList.remove('hidden');
+    }
+    function fecharModalPost() { document.getElementById('modal-pub').classList.add('hidden'); }
+
+    async function prepararEdicao(id, t, b) {
+        document.getElementById('modal-title').innerText = "Editar Post";
+        document.getElementById('edit-id').value = id;
+        document.getElementById('p-title').value = decodeURIComponent(t);
+        document.getElementById('p-body').value = decodeURIComponent(b);
+        document.getElementById('btn-salvar-post').innerText = "SALVAR";
+        document.getElementById('modal-pub').classList.remove('hidden');
     }
 
-    function carregarMensagensPrivadas() {
-        if(!target || !currentUser) return;
-        
-        // Cancela escuta do chat anterior se houver
-        if (unsubscribeChat) unsubscribeChat();
-
-        const win = document.getElementById('chat-window');
-        
-        // Busca mensagens onde (EU -> ALVO) OU (ALVO -> EU)
-        // Segurança: O Firestore garante que você só lê o que as regras permitem
-        unsubscribeChat = db.collection("messages_privadas")
-            .where('participantes', 'array-contains', currentUser.uid)
-            .orderBy("created_at", "asc")
-            .onSnapshot(snapshot => {
-                const chatHTML = snapshot.docs
-                    .map(doc => doc.data())
-                    .filter(m => (m.de_id === currentUser.uid && m.para_id === target.id) || 
-                                 (m.de_id === target.id && m.para_id === currentUser.uid))
-                    .map(m => `
-                        <div class="msg ${m.de_id === currentUser.uid ? 'sent' : 'received'}">
-                            ${m.mensagem}
-                        </div>
-                    `).join('');
-                
-                win.innerHTML = chatHTML;
-                win.scrollTop = win.scrollHeight;
-            });
+    async function apagarPost(id) {
+        if(confirm("Excluir post?")) await db.collection("posts_reddit").doc(id).delete();
     }
 
-    async function enviar() {
-        const input = document.getElementById('msg-input');
-        const txt = input.value.trim();
-        if(!txt || !target || !currentUser) return;
+    async function enviarPost() {
+        if(!canAct()) return;
+        const t = filtroPalavroes(clean(document.getElementById('p-title').value));
+        const b = filtroPalavroes(clean(document.getElementById('p-body').value));
+        const eid = document.getElementById('edit-id').value;
+        if(!t || !b) return;
 
-        input.value = "";
-        
-        try {
-            await db.collection("messages_privadas").add({
-                de_id: currentUser.uid,
-                para_id: target.id,
-                participantes: [currentUser.uid, target.id], // Campo para filtro de segurança
-                mensagem: txt,
+        if(eid) {
+            await db.collection("posts_reddit").doc(eid).update({ titulo: t, texto: b });
+        } else {
+            const u = await db.collection("users").doc(auth.currentUser.uid).get();
+            await db.collection("posts_reddit").add({
+                uid: auth.currentUser.uid, autor: u.data().nome,
+                titulo: t, texto: b, likes: 0, dislikes: 0,
                 created_at: firebase.firestore.FieldValue.serverTimestamp()
             });
-        } catch(e) {
-            console.error("Erro ao enviar mensagem segura:", e);
         }
+        fecharModalPost();
+    }
+
+    function carregarFeed() {
+        db.collection("posts_reddit").orderBy("created_at", "desc").onSnapshot(snap => {
+            const feed = document.getElementById('feed');
+            feed.innerHTML = "";
+            snap.forEach(doc => {
+                const p = doc.data(); const id = doc.id;
+                let txt = p.texto; let btnLm = "";
+                if(txt.length > 200) {
+                    txt = p.texto.substring(0,200) + "...";
+                    btnLm = `<span style="color:var(--yt-blue);cursor:pointer" onclick="mostrarTudo('${id}', \`${encodeURIComponent(p.texto)}\`)"> ler mais</span>`;
+                }
+                const card = document.createElement('div');
+                card.className = 'post-card';
+                card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px">
+                    <span style="font-size:12px; color:#888">u/${clean(p.autor)}</span>
+                    <div class="post-admin-tools">
+                        ${p.uid === auth.currentUser.uid ? 
+                        `<span onclick="prepararEdicao('${id}', \`${encodeURIComponent(p.titulo)}\`, \`${encodeURIComponent(p.texto)}\`)">Editar</span>
+                         <span onclick="apagarPost('${id}')" style="color:red">Excluir</span>` : 
+                        `<button onclick="addAmigo('${p.uid}','${clean(p.autor)}')" style="background:none; color:var(--yt-blue); border:1px solid; border-radius:15px; font-size:10px; padding:2px 8px;">+ SEGUIR</button>`}
+                    </div>
+                </div>
+                <div style="font-size:17px; font-weight:700; margin-bottom:8px;">${clean(p.titulo)}</div>
+                <p style="font-size:14px; color:#ccc" id="txt-${id}">${clean(txt)}${btnLm}</p>
+                <div class="yt-actions"><div class="like-container">
+                    <button class="yt-btn" id="lk-${id}" onclick="votar('${id}','like')">👍 <span id="cl-${id}">${p.likes||0}</span></button>
+                    <div class="sep"></div>
+                    <button class="yt-btn" id="dl-${id}" onclick="votar('${id}','dislike')">👎 <span id="cd-${id}">${p.dislikes||0}</span></button>
+                </div></div>
+                <div id="comm-list-${id}"></div>
+                <div id="btn-area-${id}"></div>
+                <div style="display:flex; gap:8px; margin-top:12px">
+                    <input type="text" placeholder="Comentar..." style="margin:0; font-size:12px">
+                    <button class="btn-main" style="width:auto; padding:0 12px; border-radius:8px" onclick="comentar(this, '${id}')">OK</button>
+                </div>`;
+                feed.appendChild(card);
+                ouvirComents(id, p.uid); ouvirVotos(id);
+            });
+        });
+    }
+
+    function mostrarTudo(id, t) { document.getElementById(`txt-${id}`).innerText = decodeURIComponent(t); }
+
+    // --- VOTOS (CURTIDA ÚNICA) ---
+    async function votar(pid, tipo) {
+        if(!canAct()) return;
+        const uid = auth.currentUser.uid;
+        const vRef = db.collection("posts_reddit").doc(pid).collection("votos").doc(uid);
+        const pRef = db.collection("posts_reddit").doc(pid);
+        const doc = await vRef.get();
+        const jaVotou = doc.exists ? doc.data().tipo : null;
+        if (jaVotou === tipo) {
+            await vRef.delete();
+            await pRef.update({ [tipo + 's']: firebase.firestore.FieldValue.increment(-1) });
+        } else if (jaVotou) {
+            await vRef.update({ tipo: tipo });
+            await pRef.update({ [jaVotou + 's']: firebase.firestore.FieldValue.increment(-1), [tipo + 's']: firebase.firestore.FieldValue.increment(1) });
+        } else {
+            await vRef.set({ tipo: tipo });
+            await pRef.update({ [tipo + 's']: firebase.firestore.FieldValue.increment(1) });
+        }
+    }
+
+    function ouvirVotos(pid) {
+        db.collection("posts_reddit").doc(pid).collection("votos").doc(auth.currentUser.uid).onSnapshot(doc => {
+            const l = document.getElementById(`lk-${pid}`); const d = document.getElementById(`dl-${pid}`);
+            if(!l || !d) return;
+            l.classList.remove('active'); d.classList.remove('active');
+            if(doc.exists) document.getElementById((doc.data().tipo === 'like' ? 'lk-' : 'dl-') + pid).classList.add('active');
+        });
+    }
+
+    // --- COMENTÁRIOS ---
+    async function comentar(btn, pid) {
+        const inp = btn.previousElementSibling;
+        const val = filtroPalavroes(clean(inp.value));
+        if(!val) return;
+        const u = await db.collection("users").doc(auth.currentUser.uid).get();
+        await db.collection("posts_reddit").doc(pid).collection("comentarios").add({
+            texto: val, autor: u.data().nome, uid: auth.currentUser.uid,
+            created_at: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        inp.value = "";
+    }
+
+    function ouvirComents(pid, donoPostID) {
+        db.collection("posts_reddit").doc(pid).collection("comentarios").orderBy("created_at","asc").onSnapshot(snap => {
+            const list = document.getElementById(`comm-list-${pid}`);
+            const area = document.getElementById(`btn-area-${pid}`);
+            if(!list) return; list.innerHTML = ""; area.innerHTML = "";
+            let i = 0;
+            snap.forEach(doc => {
+                i++; if(i <= 3) {
+                    const c = doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'comm-item';
+                    div.innerHTML = `<b>${clean(c.autor)}</b><span>${clean(c.texto)}</span>`;
+                    if(c.uid === auth.currentUser.uid || auth.currentUser.uid === donoPostID) {
+                        const del = document.createElement('button');
+                        del.className = 'comm-btn'; del.innerText = 'APAGAR';
+                        del.onclick = () => db.collection("posts_reddit").doc(pid).collection("comentarios").doc(doc.id).delete();
+                        div.appendChild(del);
+                    }
+                    list.appendChild(div);
+                }
+            });
+            if(snap.size > 3) area.innerHTML = `<button class="btn-ver-mais" onclick="verTudoC('${pid}')">Ver todos (${snap.size})</button>`;
+        });
+    }
+
+    function verTudoC(pid) {
+        db.collection("posts_reddit").doc(pid).collection("comentarios").orderBy("created_at","asc").get().then(snap => {
+            const list = document.getElementById(`comm-list-${pid}`);
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const c = doc.data();
+                const div = document.createElement('div');
+                div.className = 'comm-item';
+                div.innerHTML = `<b>${clean(c.autor)}</b><span>${clean(c.texto)}</span>`;
+                list.appendChild(div);
+            });
+        });
+    }
+
+    // --- PRIVADO ---
+    async function addAmigo(uid, nome) {
+        const meu = await db.collection("users").doc(auth.currentUser.uid).get();
+        await db.collection("users").doc(auth.currentUser.uid).collection("contatos").doc(uid).set({ nome, uid });
+        await db.collection("users").doc(uid).collection("contatos").doc(auth.currentUser.uid).set({ nome: meu.data().nome, uid: auth.currentUser.uid });
+        alert("Seguindo!");
+    }
+
+    function carregarContatos() {
+        db.collection("users").doc(auth.currentUser.uid).collection("contatos").onSnapshot(snap => {
+            const list = document.getElementById('lista-contatos'); list.innerHTML = "";
+            snap.forEach(doc => {
+                const c = doc.data();
+                const div = document.createElement('div');
+                div.className = 'post-card'; div.innerHTML = `<b>${clean(c.nome)}</b><br><small>Conversar</small>`;
+                div.onclick = () => abrirChat(c.uid, c.nome);
+                list.appendChild(div);
+            });
+        });
+    }
+
+    let chatID = "";
+    function abrirChat(uid, nome) {
+        document.getElementById('chat-with-name').innerText = clean(nome);
+        document.getElementById('chat-window').style.display = 'flex';
+        chatID = auth.currentUser.uid < uid ? auth.currentUser.uid+"_"+uid : uid+"_"+auth.currentUser.uid;
+        db.collection("chats").doc(chatID).collection("mensagens").orderBy("created_at","asc").onSnapshot(snap => {
+            const box = document.getElementById('chat-msgs'); box.innerHTML = "";
+            snap.forEach(doc => {
+                const m = doc.data();
+                const mDiv = document.createElement('div');
+                mDiv.className = `msg ${m.uid===auth.currentUser.uid?'me':'them'}`;
+                mDiv.innerText = m.texto;
+                box.appendChild(mDiv);
+            });
+            box.scrollTop = box.scrollHeight;
+        });
+    }
+
+    async function enviarMensagem() {
+        const inp = document.getElementById('msg-input');
+        const val = filtroPalavroes(clean(inp.value));
+        if(!val) return;
+        await db.collection("chats").doc(chatID).collection("mensagens").add({
+            uid: auth.currentUser.uid, texto: val, created_at: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        inp.value = "";
+    }
+
+    function fecharChat() { document.getElementById('chat-window').style.display='none'; }
+    function switchTab(t) {
+        document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
+        document.querySelectorAll('nav span').forEach(s => s.classList.remove('active'));
+        document.getElementById('tab-'+t).classList.remove('hidden');
+        document.getElementById('nav-'+t).classList.add('active');
     }
 </script>
 </body>
-  </html>
+</html>
