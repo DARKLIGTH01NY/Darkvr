@@ -2,66 +2,129 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zangi Pro - Global</title>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Zangi Pro - Social</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #0b141a; --sidebar: #111b21; --panel: #202c33; --green: #00a884; --my-msg: #005c4b; --text: #e9edef; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        :root { 
+            --bg: #0f0f0f; --card: #1e1e1e; --border: #3f3f3f; --text: #f1f1f1; 
+            --yt-blue: #3ea6ff; --msg-me: #005c4b; --msg-them: #2a2a2a;
+        }
+        body { font-family: 'Roboto', sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; }
         .hidden { display: none !important; }
-                
-        /* Auth Card */
-        .auth-card { background: var(--sidebar); padding: 30px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; border: 1px solid #222; }
-        h2 { color: var(--green); margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; background: #2a3942; border: none; border-radius: 8px; color: white; box-sizing: border-box; outline: none; }
-        button { width: 100%; padding: 12px; background: var(--green); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        button:disabled { background: #555; cursor: not-allowed; }
 
-        /* Interface Chat */
-        #app-interface { width: 100%; height: 100vh; display: flex; flex-direction: column; background: var(--bg); }
-        .header { padding: 15px; background: var(--panel); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #111b21; }
-        #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-                
-        /* Mensagens */
-        .msg-box { padding: 10px 15px; border-radius: 10px; max-width: 75%; font-size: 15px; word-wrap: break-word; position: relative; }
-        .msg-remote { background: var(--panel); align-self: flex-start; border-bottom-left-radius: 2px; }
-        .msg-me { background: var(--my-msg); align-self: flex-end; border-bottom-right-radius: 2px; }
-        .msg-name { font-size: 12px; color: var(--green); font-weight: bold; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-                
-        .btn-add { background: #34b7f1; border: none; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; }
-        .btn-nav { background: var(--green); color: white; padding: 8px 15px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold; }
-        .input-area { padding: 15px; background: var(--panel); display: flex; gap: 10px; }
+        .auth-overlay { position: fixed; inset: 0; background: radial-gradient(circle at top, #1e1e1e, #0f0f0f); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .auth-box { background: rgba(30, 30, 30, 0.9); padding: 40px; border-radius: 20px; width: 85%; max-width: 380px; text-align: center; border: 1px solid var(--border); backdrop-filter: blur(15px); }
+        .auth-link { color: var(--yt-blue); cursor: pointer; display: block; margin-top: 15px; font-size: 14px; }
+
+        nav { background: var(--bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-around; padding: 15px 0; position: sticky; top: 0; z-index: 100; }
+        nav span { cursor: pointer; font-weight: 500; color: #888; font-size: 14px; }
+        nav span.active { color: var(--yt-blue); border-bottom: 2px solid var(--yt-blue); padding-bottom: 5px; }
+
+        .container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
+        .post-card { background: var(--card); border-radius: 12px; margin-bottom: 15px; padding: 16px; border: 1px solid var(--border); }
+        
+        .yt-actions { display: flex; align-items: center; gap: 12px; margin: 15px 0; }
+        .like-container { display: flex; background: #272727; border-radius: 20px; padding: 2px; border: 1px solid #3f3f3f; }
+        .yt-btn { background: none; border: none; color: white; padding: 7px 15px; cursor: pointer; display: flex; align-items: center; gap: 7px; border-radius: 20px; font-size: 14px; }
+        .yt-btn.active { color: var(--yt-blue); }
+        .sep { width: 1px; background: var(--border); height: 20px; align-self: center; }
+
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #121212; border: 1px solid var(--border); border-radius: 10px; color: white; box-sizing: border-box; outline: none; }
+        .btn-main { background: white; color: black; border: none; padding: 12px; border-radius: 25px; width: 100%; font-weight: bold; cursor: pointer; transition: 0.2s; }
+
+        .comm-item { font-size: 14px; margin-top: 12px; border-left: 2px solid var(--yt-blue); padding-left: 10px; }
+        .comm-item b { color: var(--yt-blue); display: block; font-size: 11px; margin-bottom: 2px; }
+        .comm-tools { display: flex; gap: 10px; margin-top: 4px; }
+        .comm-btn { background: none; border: none; color: #888; font-size: 10px; cursor: pointer; padding: 0; }
+        .btn-ver-mais { background: none; border: none; color: var(--yt-blue); cursor: pointer; font-size: 13px; font-weight: bold; margin-top: 10px; }
+
+        #chat-window { position: fixed; inset: 0; background: var(--bg); z-index: 3000; display: none; flex-direction: column; }
+        .chat-header { padding: 15px; background: #1e1e1e; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 14px; word-wrap: break-word; }
+        .msg.me { align-self: flex-end; background: var(--msg-me); border-bottom-right-radius: 2px; }
+        .msg.them { align-self: flex-start; background: var(--msg-them); border-bottom-left-radius: 2px; }
+        .chat-input-area { padding: 15px; padding-bottom: 35px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: #1e1e1e; }
+        
+        .post-admin-tools { display: flex; gap: 10px; font-size: 11px; }
+        .post-admin-tools span { cursor: pointer; color: #888; text-decoration: underline; }
     </style>
 </head>
 <body>
 
-<div id="auth-section" class="auth-card hidden">
-    <h2 id="auth-title">Zangi Pro</h2>
-    <div id="reg-fields" class="hidden">
-        <input type="text" id="reg-nome" placeholder="Seu nome">
+<div id="login-screen" class="auth-overlay">
+    <div class="auth-box">
+        <h2>Zangi Social</h2>
+        <input type="email" id="login-email" placeholder="E-mail">
+        <input type="password" id="login-pass" placeholder="Senha">
+        <button class="btn-main" onclick="fazerLogin()">ENTRAR</button>
+        <span class="auth-link" onclick="toggleAuth('reg')">Criar conta nova</span>
     </div>
-    <input type="email" id="auth-email" placeholder="E-mail">
-    <input type="password" id="auth-senha" placeholder="Senha">
-    <button onclick="handleAuth()" id="btn-auth">Entrar</button>
-    <p onclick="toggleMode()" id="toggle-text" style="color:#8696a0; font-size:13px; cursor:pointer; margin-top:15px;">Não tem conta? Crie uma</p>
 </div>
 
-<div id="app-interface" class="hidden">
-    <div class="header">
-        <div style="font-weight:bold">🌎 Chat Global</div>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <a href="index2.html" class="btn-nav">PRIVADO</a>
-            <button onclick="logout()" style="width:auto; background:#ea0038; padding:8px; margin:0">Sair</button>
+<div id="reg-screen" class="auth-overlay hidden">
+    <div class="auth-box">
+        <h2>Criar Conta</h2>
+        <input type="text" id="reg-nome" maxlength="25" placeholder="Nome de usuário">
+        <input type="email" id="reg-email" placeholder="E-mail">
+        <input type="password" id="reg-pass" placeholder="Senha">
+        <button class="btn-main" onclick="fazerCadastro()">CADASTRAR</button>
+        <span class="auth-link" onclick="toggleAuth('login')">Já tenho conta</span>
+    </div>
+</div>
+
+<div id="app" class="hidden">
+    <nav>
+        <span id="nav-feed" class="active" onclick="switchTab('feed')">FEED</span>
+        <span id="nav-privado" onclick="switchTab('privado')">MENSAGENS</span>
+        <span id="nav-profile" onclick="switchTab('profile')">PERFIL</span>
+    </nav>
+
+    <div id="tab-feed" class="container">
+        <button class="btn-main" style="margin-bottom:15px" onclick="abrirModalPost()">+ CRIAR POST</button>
+        <div id="feed"></div>
+    </div>
+
+    <div id="tab-privado" class="container hidden">
+        <h3 style="padding-left:10px">Mensagens Privadas</h3>
+        <div id="lista-contatos"></div>
+    </div>
+
+    <div id="tab-profile" class="container hidden">
+        <div class="post-card">
+            <h3>Meu Perfil</h3>
+            <input type="text" id="profile-name-input" maxlength="25" placeholder="Seu nome">
+            <button class="btn-main" onclick="atualizarPerfil()">SALVAR NOME</button>
+            <button class="btn-main" onclick="auth.signOut()" style="background:none; color:red; margin-top:20px;">SAIR DA CONTA</button>
         </div>
     </div>
-    <div id="chat-window"></div>
-    <div class="input-area">
-        <input type="text" id="msg-input" placeholder="Mensagem..." onkeypress="if(event.key==='Enter') enviarMensagem()">
-        <button onclick="enviarMensagem()" style="width:auto; padding:0 20px; margin:0">➤</button>
+</div>
+
+<div id="chat-window">
+    <div class="chat-header">
+        <button onclick="fecharChat()" style="background:none; border:none; color:white; font-size:24px;">←</button>
+        <b id="chat-with-name">...</b>
+    </div>
+    <div class="chat-messages" id="chat-msgs"></div>
+    <div class="chat-input-area">
+        <input type="text" id="msg-input" maxlength="500" placeholder="Mensagem...">
+        <button class="btn-main" style="width:auto; padding:0 20px;" onclick="enviarMensagem()">ENVIAR</button>
+    </div>
+</div>
+
+<div id="modal-pub" class="auth-overlay hidden">
+    <div class="auth-box" style="text-align: left;">
+        <h3 id="modal-title">Novo Post</h3>
+        <input type="hidden" id="edit-id">
+        <input type="text" id="p-title" maxlength="100" placeholder="Título">
+        <textarea id="p-body" rows="4" maxlength="2000" placeholder="O que está acontecendo?"></textarea>
+        <button class="btn-main" id="btn-salvar-post" onclick="enviarPost()">POSTAR</button>
+        <button class="btn-main" onclick="fecharModalPost()" style="background:none; color:white">CANCELAR</button>
     </div>
 </div>
 
@@ -72,127 +135,300 @@
         projectId: "chat-60150",
         storageBucket: "chat-60150.firebasestorage.app",
         messagingSenderId: "99648585531",
-        appId: "1:99648585531:web:c6df81b493219b0f17011e",
-        measurementId: "G-Z72E8HLZHP"
+        appId: "1:99648585531:web:c6df81b493219b0f17011e"
     };
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let isLoginMode = true;
+    function clean(t) { return DOMPurify.sanitize(t ? t.trim() : ""); }
+    
+    // FILTRO DE PALAVRÕES
+    const PALAVRAS_BANIDAS = ["palavrao1", "ofensa1", "caralho", "porra", "puta"]; 
+    function filtroPalavroes(texto) {
+        if (!texto) return "";
+        let textoFiltrado = texto;
+        PALAVRAS_BANIDAS.forEach(palavra => {
+            const regex = new RegExp(palavra, "gi");
+            textoFiltrado = textoFiltrado.replace(regex, "****");
+        });
+        return textoFiltrado;
+    }
 
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            document.getElementById('auth-section').classList.add('hidden');
-            document.getElementById('app-interface').classList.remove('hidden');
-            carregarMensagens();
+    let lastAction = 0;
+    function canAct() {
+        const now = Date.now();
+        if(now - lastAction < 700) return false;
+        lastAction = now;
+        return true;
+    }
+
+    // --- AUTH ---
+    function toggleAuth(mode) {
+        document.getElementById('login-screen').classList.toggle('hidden', mode === 'reg');
+        document.getElementById('reg-screen').classList.toggle('hidden', mode === 'login');
+    }
+
+    async function fazerLogin() {
+        const e = document.getElementById('login-email').value;
+        const p = document.getElementById('login-pass').value;
+        try { await auth.signInWithEmailAndPassword(e, p); } catch(err) { alert(err.message); }
+    }
+
+    async function fazerCadastro() {
+        const n = clean(document.getElementById('reg-nome').value);
+        const e = document.getElementById('reg-email').value;
+        const p = document.getElementById('reg-pass').value;
+        try {
+            const res = await auth.createUserWithEmailAndPassword(e, p);
+            await db.collection("users").doc(res.user.uid).set({ nome: n, uid: res.user.uid });
+        } catch(err) { alert(err.message); }
+    }
+
+    auth.onAuthStateChanged(async user => {
+        if(user) {
+            document.querySelectorAll('.auth-overlay').forEach(el => el.classList.add('hidden'));
+            document.getElementById('app').classList.remove('hidden');
+            const snap = await db.collection("users").doc(user.uid).get();
+            if(snap.exists) document.getElementById('profile-name-input').value = snap.data().nome;
+            carregarFeed(); carregarContatos();
         } else {
-            document.getElementById('auth-section').classList.remove('hidden');
-            document.getElementById('app-interface').classList.add('hidden');
+            document.getElementById('app').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
         }
     });
 
-    function toggleMode() {
-        isLoginMode = !isLoginMode;
-        document.getElementById('auth-title').innerText = isLoginMode ? "Zangi Pro" : "Criar Conta";
-        document.getElementById('btn-auth').innerText = isLoginMode ? "Entrar" : "Cadastrar";
-        document.getElementById('reg-fields').classList.toggle('hidden');
-        document.getElementById('toggle-text').innerText = isLoginMode ? "Não tem conta? Crie uma" : "Já tem conta? Entre aqui";
+    async function atualizarPerfil() {
+        const n = clean(document.getElementById('profile-name-input').value);
+        if(n.length >= 3) await db.collection("users").doc(auth.currentUser.uid).update({ nome: n });
     }
 
-    async function handleAuth() {
-        const email = document.getElementById('auth-email').value.trim();
-        const senha = document.getElementById('auth-senha').value.trim();
-        const nome = document.getElementById('reg-nome').value.trim();
-        const btn = document.getElementById('btn-auth');
+    // --- POSTS ---
+    function abrirModalPost() {
+        document.getElementById('modal-title').innerText = "Novo Post";
+        document.getElementById('edit-id').value = "";
+        document.getElementById('p-title').value = "";
+        document.getElementById('p-body').value = "";
+        document.getElementById('btn-salvar-post').innerText = "POSTAR";
+        document.getElementById('modal-pub').classList.remove('hidden');
+    }
+    function fecharModalPost() { document.getElementById('modal-pub').classList.add('hidden'); }
 
-        if (!email || !senha) return alert("Preencha os campos!");
-        btn.disabled = true;
-
-        try {
-            if (isLoginMode) {
-                await auth.signInWithEmailAndPassword(email, senha);
-            } else {
-                if (!nome) throw new Error("Preencha seu nome!");
-                const res = await auth.createUserWithEmailAndPassword(email, senha);
-                
-                // Atualiza perfil no Auth
-                await res.user.updateProfile({ displayName: nome });
-
-                // SALVA NO BANCO (Para o Admin conseguir ver e deletar)
-                await db.collection("users").doc(res.user.uid).set({
-                    uid: res.user.uid,
-                    nome: nome,
-                    email: email,
-                    created_at: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                alert("Conta criada com sucesso!");
-                location.reload(); 
-            }
-        } catch (e) {
-            alert(e.message);
-        } finally {
-            btn.disabled = false;
-        }
+    async function prepararEdicao(id, t, b) {
+        document.getElementById('modal-title').innerText = "Editar Post";
+        document.getElementById('edit-id').value = id;
+        document.getElementById('p-title').value = decodeURIComponent(t);
+        document.getElementById('p-body').value = decodeURIComponent(b);
+        document.getElementById('btn-salvar-post').innerText = "SALVAR";
+        document.getElementById('modal-pub').classList.remove('hidden');
     }
 
-    async function enviarMensagem() {
-        const input = document.getElementById('msg-input');
-        const txt = input.value.trim();
-        const user = auth.currentUser;
-        if (!txt || !user) return;
-        input.value = "";
+    async function apagarPost(id) {
+        if(confirm("Excluir post?")) await db.collection("posts_reddit").doc(id).delete();
+    }
 
-        try {
-            await db.collection("messages_global").add({
-                u_id: user.uid,
-                nome: user.displayName || "Usuário",
-                mensagem: txt,
+    async function enviarPost() {
+        if(!canAct()) return;
+        const t = filtroPalavroes(clean(document.getElementById('p-title').value));
+        const b = filtroPalavroes(clean(document.getElementById('p-body').value));
+        const eid = document.getElementById('edit-id').value;
+        if(!t || !b) return;
+
+        if(eid) {
+            await db.collection("posts_reddit").doc(eid).update({ titulo: t, texto: b });
+        } else {
+            const u = await db.collection("users").doc(auth.currentUser.uid).get();
+            await db.collection("posts_reddit").add({
+                uid: auth.currentUser.uid, autor: u.data().nome,
+                titulo: t, texto: b, likes: 0, dislikes: 0,
                 created_at: firebase.firestore.FieldValue.serverTimestamp()
             });
-        } catch (e) { console.error("Erro ao enviar:", e); }
+        }
+        fecharModalPost();
     }
 
-    function carregarMensagens() {
-        db.collection("messages_global")
-          .orderBy("created_at", "asc")
-          .limitToLast(50)
-          .onSnapshot(snapshot => {
-            const win = document.getElementById('chat-window');
-            win.innerHTML = "";
-            snapshot.forEach(doc => {
-                const m = doc.data();
-                const isMe = m.u_id === auth.currentUser.uid;
-                const msgDiv = document.createElement('div');
-                msgDiv.className = `msg-box ${isMe ? 'msg-me' : 'msg-remote'}`;
-                msgDiv.innerHTML = `
-                    <div class="msg-name">
-                        ${m.nome}
-                        ${!isMe ? `<button class="btn-add" onclick="addContato('${m.u_id}','${m.nome}')">+ ADD</button>` : ''}
+    function carregarFeed() {
+        db.collection("posts_reddit").orderBy("created_at", "desc").onSnapshot(snap => {
+            const feed = document.getElementById('feed');
+            feed.innerHTML = "";
+            snap.forEach(doc => {
+                const p = doc.data(); const id = doc.id;
+                let txt = p.texto; let btnLm = "";
+                if(txt.length > 200) {
+                    txt = p.texto.substring(0,200) + "...";
+                    btnLm = `<span style="color:var(--yt-blue);cursor:pointer" onclick="mostrarTudo('${id}', \`${encodeURIComponent(p.texto)}\`)"> ler mais</span>`;
+                }
+                const card = document.createElement('div');
+                card.className = 'post-card';
+                card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px">
+                    <span style="font-size:12px; color:#888">u/${clean(p.autor)}</span>
+                    <div class="post-admin-tools">
+                        ${p.uid === auth.currentUser.uid ? 
+                        `<span onclick="prepararEdicao('${id}', \`${encodeURIComponent(p.titulo)}\`, \`${encodeURIComponent(p.texto)}\`)">Editar</span>
+                         <span onclick="apagarPost('${id}')" style="color:red">Excluir</span>` : 
+                        `<button onclick="addAmigo('${p.uid}','${clean(p.autor)}')" style="background:none; color:var(--yt-blue); border:1px solid; border-radius:15px; font-size:10px; padding:2px 8px;">+ SEGUIR</button>`}
                     </div>
-                    <div>${m.mensagem}</div>
-                `;
-                win.appendChild(msgDiv);
+                </div>
+                <div style="font-size:17px; font-weight:700; margin-bottom:8px;">${clean(p.titulo)}</div>
+                <p style="font-size:14px; color:#ccc" id="txt-${id}">${clean(txt)}${btnLm}</p>
+                <div class="yt-actions"><div class="like-container">
+                    <button class="yt-btn" id="lk-${id}" onclick="votar('${id}','like')">👍 <span id="cl-${id}">${p.likes||0}</span></button>
+                    <div class="sep"></div>
+                    <button class="yt-btn" id="dl-${id}" onclick="votar('${id}','dislike')">👎 <span id="cd-${id}">${p.dislikes||0}</span></button>
+                </div></div>
+                <div id="comm-list-${id}"></div>
+                <div id="btn-area-${id}"></div>
+                <div style="display:flex; gap:8px; margin-top:12px">
+                    <input type="text" placeholder="Comentar..." style="margin:0; font-size:12px">
+                    <button class="btn-main" style="width:auto; padding:0 12px; border-radius:8px" onclick="comentar(this, '${id}')">OK</button>
+                </div>`;
+                feed.appendChild(card);
+                ouvirComents(id, p.uid); ouvirVotos(id);
             });
-            win.scrollTop = win.scrollHeight;
         });
     }
 
-    async function addContato(id, nome) {
-        const user = auth.currentUser;
-        try {
-            await db.collection("contatos").add({
-                dono_id: user.uid,
-                contato_id: id,
-                contato_nome: nome
-            });
-            alert(nome + " adicionado aos contatos!");
-        } catch(e) { alert("Erro ao adicionar contato."); }
+    function mostrarTudo(id, t) { document.getElementById(`txt-${id}`).innerText = decodeURIComponent(t); }
+
+    // --- VOTOS (CURTIDA ÚNICA) ---
+    async function votar(pid, tipo) {
+        if(!canAct()) return;
+        const uid = auth.currentUser.uid;
+        const vRef = db.collection("posts_reddit").doc(pid).collection("votos").doc(uid);
+        const pRef = db.collection("posts_reddit").doc(pid);
+        const doc = await vRef.get();
+        const jaVotou = doc.exists ? doc.data().tipo : null;
+        if (jaVotou === tipo) {
+            await vRef.delete();
+            await pRef.update({ [tipo + 's']: firebase.firestore.FieldValue.increment(-1) });
+        } else if (jaVotou) {
+            await vRef.update({ tipo: tipo });
+            await pRef.update({ [jaVotou + 's']: firebase.firestore.FieldValue.increment(-1), [tipo + 's']: firebase.firestore.FieldValue.increment(1) });
+        } else {
+            await vRef.set({ tipo: tipo });
+            await pRef.update({ [tipo + 's']: firebase.firestore.FieldValue.increment(1) });
+        }
     }
 
-    function logout() { auth.signOut(); }
+    function ouvirVotos(pid) {
+        db.collection("posts_reddit").doc(pid).collection("votos").doc(auth.currentUser.uid).onSnapshot(doc => {
+            const l = document.getElementById(`lk-${pid}`); const d = document.getElementById(`dl-${pid}`);
+            if(!l || !d) return;
+            l.classList.remove('active'); d.classList.remove('active');
+            if(doc.exists) document.getElementById((doc.data().tipo === 'like' ? 'lk-' : 'dl-') + pid).classList.add('active');
+        });
+    }
+
+    // --- COMENTÁRIOS ---
+    async function comentar(btn, pid) {
+        const inp = btn.previousElementSibling;
+        const val = filtroPalavroes(clean(inp.value));
+        if(!val) return;
+        const u = await db.collection("users").doc(auth.currentUser.uid).get();
+        await db.collection("posts_reddit").doc(pid).collection("comentarios").add({
+            texto: val, autor: u.data().nome, uid: auth.currentUser.uid,
+            created_at: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        inp.value = "";
+    }
+
+    function ouvirComents(pid, donoPostID) {
+        db.collection("posts_reddit").doc(pid).collection("comentarios").orderBy("created_at","asc").onSnapshot(snap => {
+            const list = document.getElementById(`comm-list-${pid}`);
+            const area = document.getElementById(`btn-area-${pid}`);
+            if(!list) return; list.innerHTML = ""; area.innerHTML = "";
+            let i = 0;
+            snap.forEach(doc => {
+                i++; if(i <= 3) {
+                    const c = doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'comm-item';
+                    div.innerHTML = `<b>${clean(c.autor)}</b><span>${clean(c.texto)}</span>`;
+                    if(c.uid === auth.currentUser.uid || auth.currentUser.uid === donoPostID) {
+                        const del = document.createElement('button');
+                        del.className = 'comm-btn'; del.innerText = 'APAGAR';
+                        del.onclick = () => db.collection("posts_reddit").doc(pid).collection("comentarios").doc(doc.id).delete();
+                        div.appendChild(del);
+                    }
+                    list.appendChild(div);
+                }
+            });
+            if(snap.size > 3) area.innerHTML = `<button class="btn-ver-mais" onclick="verTudoC('${pid}')">Ver todos (${snap.size})</button>`;
+        });
+    }
+
+    function verTudoC(pid) {
+        db.collection("posts_reddit").doc(pid).collection("comentarios").orderBy("created_at","asc").get().then(snap => {
+            const list = document.getElementById(`comm-list-${pid}`);
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const c = doc.data();
+                const div = document.createElement('div');
+                div.className = 'comm-item';
+                div.innerHTML = `<b>${clean(c.autor)}</b><span>${clean(c.texto)}</span>`;
+                list.appendChild(div);
+            });
+        });
+    }
+
+    // --- PRIVADO ---
+    async function addAmigo(uid, nome) {
+        const meu = await db.collection("users").doc(auth.currentUser.uid).get();
+        await db.collection("users").doc(auth.currentUser.uid).collection("contatos").doc(uid).set({ nome, uid });
+        await db.collection("users").doc(uid).collection("contatos").doc(auth.currentUser.uid).set({ nome: meu.data().nome, uid: auth.currentUser.uid });
+        alert("Seguindo!");
+    }
+
+    function carregarContatos() {
+        db.collection("users").doc(auth.currentUser.uid).collection("contatos").onSnapshot(snap => {
+            const list = document.getElementById('lista-contatos'); list.innerHTML = "";
+            snap.forEach(doc => {
+                const c = doc.data();
+                const div = document.createElement('div');
+                div.className = 'post-card'; div.innerHTML = `<b>${clean(c.nome)}</b><br><small>Conversar</small>`;
+                div.onclick = () => abrirChat(c.uid, c.nome);
+                list.appendChild(div);
+            });
+        });
+    }
+
+    let chatID = "";
+    function abrirChat(uid, nome) {
+        document.getElementById('chat-with-name').innerText = clean(nome);
+        document.getElementById('chat-window').style.display = 'flex';
+        chatID = auth.currentUser.uid < uid ? auth.currentUser.uid+"_"+uid : uid+"_"+auth.currentUser.uid;
+        db.collection("chats").doc(chatID).collection("mensagens").orderBy("created_at","asc").onSnapshot(snap => {
+            const box = document.getElementById('chat-msgs'); box.innerHTML = "";
+            snap.forEach(doc => {
+                const m = doc.data();
+                const mDiv = document.createElement('div');
+                mDiv.className = `msg ${m.uid===auth.currentUser.uid?'me':'them'}`;
+                mDiv.innerText = m.texto;
+                box.appendChild(mDiv);
+            });
+            box.scrollTop = box.scrollHeight;
+        });
+    }
+
+    async function enviarMensagem() {
+        const inp = document.getElementById('msg-input');
+        const val = filtroPalavroes(clean(inp.value));
+        if(!val) return;
+        await db.collection("chats").doc(chatID).collection("mensagens").add({
+            uid: auth.currentUser.uid, texto: val, created_at: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        inp.value = "";
+    }
+
+    function fecharChat() { document.getElementById('chat-window').style.display='none'; }
+    function switchTab(t) {
+        document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
+        document.querySelectorAll('nav span').forEach(s => s.classList.remove('active'));
+        document.getElementById('tab-'+t).classList.remove('hidden');
+        document.getElementById('nav-'+t).classList.add('active');
+    }
 </script>
 </body>
 </html>
